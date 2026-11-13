@@ -1,0 +1,43 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+.ipynb_checkpoints/
+
+# Generated model artefacts (regenerate with `make model`)
+model/data/*
+!model/data/.gitkeep
+
+# Vivado
+*.jou
+*.log
+*.str
+.Xil/
+fpga/build/
+*.cache/
+*.hw/
+*.runs/
+*.sim/
+*.ip_user_files/
+*.gen/
+xsim.dir/
+*.wdb
+*.pb
+
+# Keep curated reports
+!fpga/reports/*.rpt
+
+# Verilator
+obj_dir/
+
+# Waveforms
+*.vcd
+*.fst
+
+# OpenLane run directories (keep curated reports only)
+asic/openlane/runs/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
