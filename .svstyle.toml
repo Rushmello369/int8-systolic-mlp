@@ -1,0 +1,1 @@
+synth = "vivado"   # project synthesises with Vivado, so svstyle does not run Yosys

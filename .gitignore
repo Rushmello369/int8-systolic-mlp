@@ -45,3 +45,6 @@ Thumbs.db
 # Claude Code (local only)
 CLAUDE.md
 .claude/
+
+# Simulation and implementation build output
+build/
