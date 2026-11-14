@@ -4,10 +4,10 @@ PYTHON ?= python
 
 .PHONY: model test-model lint sim regress clean
 
-model:                     ## Train float MLP, quantise to INT8, emit test vectors
+model:                     ## Train float MLP, quantise to INT8, run the integer golden model
 	$(PYTHON) model/train.py
 	$(PYTHON) model/quantize.py
-	$(PYTHON) model/gen_vectors.py
+	$(PYTHON) model/golden.py
 
 test-model:                ## Python unit tests for the golden model
 	$(PYTHON) -m pytest model -q
