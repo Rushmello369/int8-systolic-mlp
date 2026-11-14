@@ -41,3 +41,7 @@ asic/openlane/runs/
 .DS_Store
 Thumbs.db
 .vscode/
+
+# Claude Code (local only)
+CLAUDE.md
+.claude/
