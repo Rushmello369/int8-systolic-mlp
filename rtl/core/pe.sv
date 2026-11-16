@@ -1,5 +1,4 @@
-// Copyright (c) 2026 <Company>
-// All rights reserved
+// int8_mlp: INT8 MLP accelerator on a weight-stationary systolic array (Artix-7)
 //
 // Description:
 //   Processing element (PE) of the weight-stationary systolic array.
