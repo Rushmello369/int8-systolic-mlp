@@ -14,7 +14,10 @@
 //   No reset: every flop is datapath. The array controller drives zeros
 //   into act_i and psum_i until real data arrives.
 
+// use_dsp: put the multiply-add into one DSP48 slice. Left to itself, Vivado builds
+// an 8x8 multiply from LUTs, and multiply plus 24-bit add then misses 150 MHz.
 // svstyle: waive LNG-014 Vivado xsim rejects `input logic` ports under `default_nettype none
+(* use_dsp = "yes" *)
 module pe #(
     parameter int unsigned DataWidth = 8,  // Width of weights and activations (signed)
     parameter int unsigned AccWidth  = 24  // Width of the partial sums (signed)

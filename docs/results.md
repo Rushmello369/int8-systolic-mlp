@@ -7,6 +7,9 @@ Every number here points to the report or log it came from. No estimates.
 | Float accuracy (test split, 360 images) | 96.67 % (348 / 360) | `python model/train.py` |
 | INT8 accuracy (test split, 360 images) | 96.11 % (346 / 360) | `python model/golden.py` |
 | INT8 loss vs float | −0.56 points (target ≤ 1) | `python model/golden.py` |
+| RTL vs integer model, all 360 test images | 0 mismatches (every hidden value, score and prediction) | `scripts\sim.ps1 mlp_core` |
+| Clock, routed design | 150 MHz met: WNS +0.580 ns, WHS +0.013 ns | [timing_summary.rpt](../fpga/reports/timing_summary.rpt) |
+| DSP48E1 slices | 72 of 740 (64 PEs + 8 requantisers) | [utilization.rpt](../fpga/reports/utilization.rpt) |
 
 ## Float baseline details
 
@@ -37,3 +40,69 @@ Run: `python model/quantize.py`, then `python model/golden.py`. Calibrated on th
 | Accumulator width chosen | 24 bits | `test_accumulators_fit_24_bits` |
 | Hidden INT8 values seen | 0 .. 121 | |
 | Python tests | 11 passed | `python -m pytest model -v` |
+
+## RTL simulation
+
+Simulator: Vivado xsim 2025.2. Each testbench prints one PASS or FAIL line;
+run it with `powershell -ExecutionPolicy Bypass -File scripts\sim.ps1 <name>`.
+All runs use seed 1.
+
+| Testbench | What it checks | Checks passed |
+| --- | --- | --- |
+| `pe` | every INT8 × INT8 product, accumulator wrap | 85,799 |
+| `pe_array` (8×8) | 100,000 random tiles plus corners | 6,200,720 |
+| `skew_buffer` (8 lanes, 8 bits) | 100,000 random cycles plus impulse and extremes | 800,172 |
+| `systolic_core` (8×8) | 20,000 random tiles; latency = Rows + Cols − 1 = 15 cycles | 1,240,704 |
+| `requant` | acc sweeps over ±2^17 for six multipliers, extremes, 1,000,000 random | 2,572,882 |
+| `argmax` | ties, one-winner cases, 400,000 random | 398,780 |
+| `mlp_core` | all 360 images at five batch sizes against `model/gen_vectors.py` | 26,810 |
+| `fpga_top` | the same through the MMCM, UART and host protocol | 725 |
+
+Non-square shapes (3×5, 5×3) of `pe_array` and `systolic_core` also pass.
+
+### Cycles per run of the whole test set (360 images)
+
+From `scripts\sim.ps1 mlp_core`. Utilisation = 2,368 useful MACs per image × 360
+images ÷ (64 MACs per cycle × cycles).
+
+| Batch size | Cycles | Array utilisation |
+| --- | --- | --- |
+| 360 | 15,263 | 87.3 % |
+| 64 | 19,573 | 68.1 % |
+| 8 | 53,191 | 25.0 % |
+| 7 | 59,225 | 22.5 % |
+| 1 | 324,721 | 4.1 % |
+
+Each tile costs 8 load cycles and 13 drain cycles whatever the batch size, so
+small batches leave the array idle most of the time.
+
+### Mutation testing
+
+Each bug was planted by hand, the testbench run, and the file restored.
+
+| Planted bug | Caught by |
+| --- | --- |
+| requant drops the rounding half-step | `requant`: 97,358 mismatches |
+| argmax gives ties to the higher digit | `argmax`: 87,332 mismatches |
+| drain one cycle shorter than Rows + Cols − 3 | `mlp_core`: assertion `NoLoadInFlight_A` |
+| bias not added on the first input block | `mlp_core`: 2,166 mismatches |
+| wrong input block in the layer 2 tile index | `mlp_core`: 1,060 mismatches |
+
+## FPGA implementation
+
+Vivado 2025.2, part xc7a200tfbg484-2, routed design, no bitstream yet.
+Build: `powershell -ExecutionPolicy Bypass -File scripts\build.ps1`.
+
+| Quantity | Value | Source |
+| --- | --- | --- |
+| System clock | 150 MHz (MMCM from the 200 MHz board clock) | [clocks.rpt](../fpga/reports/clocks.rpt) |
+| Worst setup slack (WNS) | +0.580 ns, 0 failing endpoints | [timing_summary.rpt](../fpga/reports/timing_summary.rpt) |
+| Worst hold slack (WHS) | +0.013 ns, 0 failing endpoints | [timing_summary.rpt](../fpga/reports/timing_summary.rpt) |
+| Slice LUTs | 1,586 (1.19 %) | [utilization.rpt](../fpga/reports/utilization.rpt) |
+| Slice registers | 2,226 (0.83 %) | [utilization.rpt](../fpga/reports/utilization.rpt) |
+| Block RAM tiles | 19.5 (5.34 %) | [utilization.rpt](../fpga/reports/utilization.rpt) |
+| DSP48E1 | 72 (9.73 %) | [utilization.rpt](../fpga/reports/utilization.rpt) |
+
+The first build missed 150 MHz (WNS −1.831 ns, 72 failing endpoints). Three fixes closed it:
+the argmax tree got one register per compare level, the PE multiply-add moved into DSP48
+slices (`use_dsp`), and a register was added between the input memories and the array.

@@ -1,0 +1,40 @@
+Copyright 1986-2022 Xilinx, Inc. All Rights Reserved. Copyright 2022-2025 Advanced Micro Devices, Inc. All Rights Reserved.
+---------------------------------------------------------------------------------------------------------------------------------------------
+| Tool Version : Vivado v.2025.2 (win64) Build 6299465 Fri Nov 14 19:35:11 GMT 2025
+| Date         : Wed Nov 18 17:33:24 2026
+| Host         : LAPTOP-SL70J219 running 64-bit major release  (build 9200)
+| Command      : report_utilization -hierarchical -file C:/int8_mlp/fpga/reports/utilization_hierarchical.rpt
+| Design       : fpga_top
+| Device       : xc7a200tfbg484-2
+| Speed File   : -2
+| Design State : Routed
+---------------------------------------------------------------------------------------------------------------------------------------------
+
+Utilization Design Information
+
+Table of Contents
+-----------------
+1. Utilization by Hierarchy
+
+1. Utilization by Hierarchy
+---------------------------
+
++------------------+-----------------------------+------------+------------+---------+------+------+--------+--------+------------+
+|     Instance     |            Module           | Total LUTs | Logic LUTs | LUTRAMs | SRLs |  FFs | RAMB36 | RAMB18 | DSP Blocks |
++------------------+-----------------------------+------------+------------+---------+------+------+--------+--------+------------+
+| fpga_top         |                       (top) |       1586 |       1354 |      86 |  146 | 2226 |     18 |      3 |         72 |
+|   (fpga_top)     |                       (top) |          4 |          4 |       0 |    0 |   28 |      0 |      0 |          0 |
+|   u_host_if      |                     host_if |        113 |        113 |       0 |    0 |  118 |      0 |      0 |          0 |
+|   u_mlp_core     |                    mlp_core |       1419 |       1187 |      86 |  146 | 2026 |     18 |      3 |         72 |
+|     (u_mlp_core) |                    mlp_core |        268 |        219 |       0 |   49 |  608 |      0 |      0 |          0 |
+|     u_argmax     |                      argmax |        319 |        302 |       0 |   17 |  246 |      0 |      0 |          0 |
+|     u_core       |               systolic_core |        272 |        192 |       0 |   80 | 1000 |      0 |      0 |         64 |
+|       u_array    |                    pe_array |         24 |         24 |       0 |    0 |  704 |      0 |      0 |         64 |
+|       u_deskew   | skew_buffer__parameterized0 |        228 |        168 |       0 |   60 |  192 |      0 |      0 |          0 |
+|       u_skew     |                 skew_buffer |         20 |          0 |       0 |   20 |  104 |      0 |      0 |          0 |
+|     u_ctrl       |                  controller |        246 |        246 |       0 |    0 |  116 |      0 |      0 |          0 |
+|     u_mult_rom   |     sdp_ram__parameterized4 |         54 |          0 |      54 |    0 |    0 |      0 |      0 |          0 |
++------------------+-----------------------------+------------+------------+---------+------+------+--------+--------+------------+
+* Note: The sum of lower-level cells may be larger than their parent cells total, due to cross-hierarchy LUT combining
+
+
