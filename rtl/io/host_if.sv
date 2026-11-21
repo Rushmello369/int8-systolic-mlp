@@ -50,15 +50,15 @@ module host_if
         StSendSummary
     } state_e;
 
-    state_e                 state_q, state_d;  // Where in the command or reply we are
-    logic   [          7:0] size_high_q, size_high_d;  // Batch size high byte
-    logic   [BatchWidth-1:0] batch_size_q, batch_size_d;  // Batch size for the run
-    logic                   start_q, start_d;  // Registered start pulse
-    logic   [ImageWidth-1:0] image_q, image_d;  // Next image to report
-    logic   [          3:0] byte_q, byte_d;  // Summary bytes sent so far
-    logic   [SummaryBytes*8-1:0] summary_q, summary_d;  // Summary, next byte at the top
-    logic                   send_q, send_d;  // Registered send pulse
-    logic   [          7:0] tx_data_q, tx_data_d;  // Registered byte to send
+    state_e state_q, state_d;  // Where in the command or reply we are
+    logic [7:0] size_high_q, size_high_d;  // Batch size high byte
+    logic [BatchWidth-1:0] batch_size_q, batch_size_d;  // Batch size for the run
+    logic start_q, start_d;  // Registered start pulse
+    logic [ImageWidth-1:0] image_q, image_d;  // Next image to report
+    logic [3:0] byte_q, byte_d;  // Summary bytes sent so far
+    logic [SummaryBytes*8-1:0] summary_q, summary_d;  // Summary, next byte at the top
+    logic send_q, send_d;  // Registered send pulse
+    logic [7:0] tx_data_q, tx_data_d;  // Registered byte to send
 
     // Next state and reply data.
     always_comb begin

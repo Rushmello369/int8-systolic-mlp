@@ -28,7 +28,7 @@ module uart_tx #(
     logic                  busy_q;  // A frame is in progress
     logic [CountWidth-1:0] count_q;  // Cycles into the current bit
     logic [           3:0] bit_q;  // Bits sent: 0 start, 1..8 data, 9 stop
-    logic [           9:0] frame_q;  // Stop bit, data, start bit; bit 0 is on the line
+    logic [           8:0] frame_q;  // Stop bit and data still to send; bit 0 goes out next
     logic                  tx_q;  // Line level
 
     // Load a frame on send_i, then shift it out one bit every ClksPerBit cycles.
@@ -44,7 +44,7 @@ module uart_tx #(
                 busy_q  <= 1'b1;
                 count_q <= '0;
                 bit_q   <= '0;
-                frame_q <= {1'b1, data_i, 1'b0};
+                frame_q <= {1'b1, data_i};
                 tx_q    <= 1'b0;
             end
         end else if (count_q == CountWidth'(ClksPerBit - 1)) begin
@@ -54,8 +54,8 @@ module uart_tx #(
                 tx_q   <= 1'b1;
             end else begin
                 bit_q   <= bit_q + 4'd1;
-                frame_q <= {1'b1, frame_q[9:1]};
-                tx_q    <= frame_q[1];
+                frame_q <= {1'b1, frame_q[8:1]};
+                tx_q    <= frame_q[0];
             end
         end else begin
             count_q <= count_q + 1'b1;

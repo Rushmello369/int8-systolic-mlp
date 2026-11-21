@@ -42,19 +42,19 @@ module mlp_core
     parameter string BiasFile   = "bias.mem",     // Biases, one neuron block per word
     parameter string MultFile   = "mult.mem"      // Requantisation multipliers, one block per word
 ) (
-    input  logic                  clk_i,             // System clock
-    input  logic                  rst_ni,            // Asynchronous reset, active-low
+    input  logic                  clk_i,            // System clock
+    input  logic                  rst_ni,           // Asynchronous reset, active-low
     // ---- Run control ----
-    input  logic                  start_i,           // Start a run over all test images
-    input  logic [BatchWidth-1:0] batch_size_i,      // Images per batch, sampled at start
-    output logic                  busy_o,            // A run is in progress
-    output logic                  done_o,            // One-cycle pulse: results are ready
+    input  logic                  start_i,          // Start a run over all test images
+    input  logic [BatchWidth-1:0] batch_size_i,     // Images per batch, sampled at start
+    output logic                  busy_o,           // A run is in progress
+    output logic                  done_o,           // One-cycle pulse: results are ready
     // ---- Results ----
-    output logic [          31:0] cycle_count_o,     // Cycles the last run took
-    output logic [          15:0] correct_count_o,   // Predictions equal to the label
-    output logic [          31:0] checksum_o,        // Sum of all scores, modulo 2^32
-    input  logic [ImageWidth-1:0] result_image_i,    // Image whose prediction to read
-    output logic [DigitWidth-1:0] result_digit_o     // Its digit, one cycle later
+    output logic [          31:0] cycle_count_o,    // Cycles the last run took
+    output logic [          15:0] correct_count_o,  // Predictions equal to the label
+    output logic [          31:0] checksum_o,       // Sum of all scores, modulo 2^32
+    input  logic [ImageWidth-1:0] result_image_i,   // Image whose prediction to read
+    output logic [DigitWidth-1:0] result_digit_o    // Its digit, one cycle later
 );
     localparam int unsigned FeedLatency = 2;  // controller read to core input
     localparam int unsigned CoreLatency = Rows + Cols - 1;  // systolic_core: act_i to psum_o
@@ -139,9 +139,9 @@ module mlp_core
         .read_data_o (image_word)
     );
 
-    logic                       hidden_write;  // Write a block of hidden values (PD)
-    logic [HiddenAddrWidth-1:0] hidden_write_addr;  // Image in batch and neuron block
-    hidden_vector_t             hidden_write_data;  // Requantised values
+    logic                                 hidden_write;  // Write a block of hidden values (PD)
+    logic           [HiddenAddrWidth-1:0] hidden_write_addr;  // Image in batch and neuron block
+    hidden_vector_t                       hidden_write_data;  // Requantised values
 
     // Hidden values: written by layer 1, read as the layer 2 inputs.
     sdp_ram #(
@@ -157,8 +157,8 @@ module mlp_core
         .read_data_o (hidden_word)
     );
 
-    logic           read_weight_load;  // weight_read, one cycle on: beside weight_word
-    logic           read_layer;  // issue_layer, one cycle on: beside the input words
+    logic           read_weight_load_q;  // weight_read, one cycle on: beside weight_word
+    logic           read_layer_q;  // issue_layer, one cycle on: beside the input words
     logic           core_weight_load_q;  // Load strobe into the core
     weight_vector_t core_weight_q;  // Weight word into the core
     act_vector_t    core_act_q;  // Input vector into the core: image or hidden word
@@ -166,20 +166,20 @@ module mlp_core
     // Delay the load strobe (control, reset) beside the memory read and the feed register.
     always_ff @(posedge clk_i or negedge rst_ni) begin
         if (!rst_ni) begin
-            read_weight_load   <= 1'b0;
+            read_weight_load_q <= 1'b0;
             core_weight_load_q <= 1'b0;
         end else begin
-            read_weight_load   <= weight_read;
-            core_weight_load_q <= read_weight_load;
+            read_weight_load_q <= weight_read;
+            core_weight_load_q <= read_weight_load_q;
         end
     end
 
     // Feed register: pick this layer's input, so the BRAM output does not
     // drive the multipliers directly.
     always_ff @(posedge clk_i) begin
-        read_layer    <= issue_layer;
+        read_layer_q    <= issue_layer;
         core_weight_q <= weight_word;
-        core_act_q    <= read_layer ? hidden_word : image_word;
+        core_act_q    <= read_layer_q ? hidden_word : image_word;
     end
 
     // ---- The array ----
@@ -203,9 +203,9 @@ module mlp_core
     typedef struct packed {
         logic                       layer;  // 0: layer 1, 1: layer 2
         logic [BatchIndexWidth-1:0] image;  // Image within the batch
-        logic [     BlockWidth-1:0] block;  // Neuron block within the layer
+        logic [BlockWidth-1:0]      block;  // Neuron block within the layer
         logic                       first;  // First input block
-        logic                       last;  // Last input block
+        logic                       last;   // Last input block
     } tag_t;
 
     tag_t issue_tag;  // The controller's tag for this cycle's read
@@ -221,7 +221,7 @@ module mlp_core
     // TagStages-1 lines up with core_psum, and stage TagStages-2 is one cycle
     // earlier, in time to read the memories the output side needs.
     logic [TagStages-1:0] tag_valid_q;  // A real vector is at this stage
-    tag_t                 tag_q      [TagStages];  // Its tag
+    tag_t                 tag_q                                          [TagStages];  // Its tag
 
     // Shift the valid bits (control, reset).
     always_ff @(posedge clk_i or negedge rst_ni) begin
@@ -240,19 +240,23 @@ module mlp_core
         end
     end
 
+    // Only the image, block and layer fields address memories; first and last are
+    // used later, from the tag line itself.
+    /* verilator lint_off UNUSEDSIGNAL */
     tag_t read_tag;  // One cycle before the result: read acc, bias, best, label
+    /* verilator lint_on UNUSEDSIGNAL */
     assign read_tag = tag_q[TagStages-2];
 
     // ---- P0: add to the running sum ----
-    acc_vector_t                  acc_word;  // Running sums of this image, read last cycle
-    acc_vector_t                  bias_word;  // Biases of this neuron block, read last cycle
-    mult_vector_t                 mult_word;  // Multipliers of this neuron block, read last cycle
-    logic        [ BestWidth-1:0] best_word;  // Best score and digit so far, read last cycle
-    logic        [DigitWidth-1:0] label_word;  // True digit of this image, read last cycle
+    acc_vector_t                   acc_word;  // Running sums of this image, read last cycle
+    acc_vector_t                   bias_word;  // Biases of this neuron block, read last cycle
+    mult_vector_t                  mult_word;  // Multipliers of this neuron block, read last cycle
+    logic         [ BestWidth-1:0] best_word;  // Best score and digit so far, read last cycle
+    logic         [DigitWidth-1:0] label_word;  // True digit of this image, read last cycle
 
-    logic              p1_acc_write;  // Store p1_acc as the running sum
-    tag_t              p1_tag;  // Tag of the P1 stage
-    acc_vector_t       p1_acc;  // Running sum including this tile
+    logic                          p1_acc_write;  // Store p1_acc_q as the running sum
+    tag_t                          p1_tag_q;  // Tag of the P1 stage
+    acc_vector_t                   p1_acc_q;  // Running sum including this tile
 
     // Running sums: one word per image in the batch.
     sdp_ram #(
@@ -262,16 +266,16 @@ module mlp_core
     ) u_acc_ram (
         .clk_i       (clk_i),
         .write_en_i  (p1_acc_write),
-        .write_addr_i(p1_tag.image),
-        .write_data_i(p1_acc),
+        .write_addr_i(p1_tag_q.image),
+        .write_data_i(p1_acc_q),
         .read_addr_i (read_tag.image),
         .read_data_o (acc_word)
     );
 
     // Bias word: layer 1 blocks are 0..3, layer 2 blocks follow.
     logic [BlockWidth-1:0] bias_addr;  // Bias word of the vector one cycle before P0
-    assign bias_addr = read_tag.layer ? (BlockWidth'(L1ColBlocks) + read_tag.block) :
-        read_tag.block;
+    assign
+        bias_addr = read_tag.layer ? (BlockWidth'(L1ColBlocks) + read_tag.block) : read_tag.block;
 
     // Biases, one neuron block per word.
     sdp_ram #(
@@ -301,7 +305,7 @@ module mlp_core
         .read_data_o (mult_word)
     );
 
-    logic                     best_write;  // Store the best score and digit so far (PD)
+    logic                       best_write;  // Store the best score and digit so far (PD)
     logic [BatchIndexWidth-1:0] best_write_image;  // Which image
     logic [      BestWidth-1:0] best_write_data;  // {score, digit}
 
@@ -355,31 +359,31 @@ module mlp_core
     end
 
     // ---- P1: store the sum; a final sum enters requant or argmax ----
-    logic                  p1_valid;  // P1 holds a real result
-    mult_vector_t          p1_mult;  // Multipliers, beside p1_acc
-    logic [ BestWidth-1:0] p1_best;  // Best so far, beside p1_acc
-    logic [DigitWidth-1:0] p1_label;  // True digit, beside p1_acc
+    logic                          p1_valid_q;  // P1 holds a real result
+    mult_vector_t                  p1_mult_q;  // Multipliers, beside p1_acc_q
+    logic         [ BestWidth-1:0] p1_best_q;  // Best so far, beside p1_acc_q
+    logic         [DigitWidth-1:0] p1_label_q;  // True digit, beside p1_acc_q
 
     // P1 valid bit (control, reset).
     always_ff @(posedge clk_i or negedge rst_ni) begin
         if (!rst_ni) begin
-            p1_valid <= 1'b0;
+            p1_valid_q <= 1'b0;
         end else begin
-            p1_valid <= p0_valid;
+            p1_valid_q <= p0_valid;
         end
     end
 
     // P1 data (datapath).
     always_ff @(posedge clk_i) begin
-        p1_tag   <= p0_tag;
-        p1_acc   <= p0_sum;
-        p1_mult  <= mult_word;
-        p1_best  <= best_word;
-        p1_label <= label_word;
+        p1_tag_q   <= p0_tag;
+        p1_acc_q   <= p0_sum;
+        p1_mult_q  <= mult_word;
+        p1_best_q  <= best_word;
+        p1_label_q <= label_word;
     end
 
     // Store every partial sum; a final one is never read back, so skip it.
-    assign p1_acc_write = p1_valid && !p1_tag.last;
+    assign p1_acc_write = p1_valid_q && !p1_tag_q.last;
 
     // Layer 1: requantise each column's final sum into a hidden value.
     hidden_vector_t requant_hidden;  // Requantised values, RequantLatency cycles after P1
@@ -392,8 +396,8 @@ module mlp_core
             .OutWidth (DataWidth)
         ) u_requant (
             .clk_i  (clk_i),
-            .acc_i  (p1_acc[col]),
-            .mult_i (p1_mult[col]),
+            .acc_i  (p1_acc_q[col]),
+            .mult_i (p1_mult_q[col]),
             .value_o(requant_hidden[col])
         );
     end
@@ -401,7 +405,7 @@ module mlp_core
     // Layer 2: a lane is a real digit only below NumOutputs (the rest is padding).
     logic [Cols-1:0] score_valid;  // Lane holds a real digit's score
     for (genvar col = 0; col < Cols; col++) begin : gen_score_valid
-        assign score_valid[col] = (32'(p1_tag.block) * Cols + col) < NumOutputs;
+        assign score_valid[col] = (32'(p1_tag_q.block) * Cols + col) < NumOutputs;
     end
 
     logic signed [  AccWidth-1:0] best_score;  // Best score so far, at stage PD
@@ -414,12 +418,12 @@ module mlp_core
         .IndexWidth(DigitWidth)
     ) u_argmax (
         .clk_i       (clk_i),
-        .scores_i    (p1_acc),
+        .scores_i    (p1_acc_q),
         .lane_valid_i(score_valid),
-        .base_index_i(DigitWidth'(32'(p1_tag.block) * Cols)),
-        .use_prev_i  (p1_tag.block != '0),
-        .prev_score_i(p1_best[BestWidth-1:DigitWidth]),
-        .prev_index_i(p1_best[DigitWidth-1:0]),
+        .base_index_i(DigitWidth'(32'(p1_tag_q.block) * Cols)),
+        .use_prev_i  (p1_tag_q.block != '0),
+        .prev_score_i(p1_best_q[BestWidth-1:DigitWidth]),
+        .prev_index_i(p1_best_q[DigitWidth-1:0]),
         .best_score_o(best_score),
         .best_index_o(best_digit)
     );
@@ -431,31 +435,31 @@ module mlp_core
         score_sum = '0;
         for (int col = 0; col < Cols; col++) begin
             if (score_valid[col]) begin
-                score_sum = score_sum + 32'($signed(p1_acc[col]));
+                score_sum = score_sum + 32'($signed(p1_acc_q[col]));
             end
         end
     end
 
     // ---- P2 .. PD: tags beside the requant and argmax pipelines ----
     // post_*_q[s] belongs to stage P(2+s); the last entry is stage PD.
-    logic [ ArgmaxLatency-1:0] post_valid_q;  // Stage holds a real result
-    tag_t                      post_tag_q      [ArgmaxLatency];  // Its tag
-    logic [    DigitWidth-1:0] post_label_q    [ArgmaxLatency];  // True digit
-    logic [              31:0] post_score_sum_q[ArgmaxLatency];  // Checksum contribution
+    logic [ArgmaxLatency-1:0] post_valid_q;  // Stage holds a real result
+    tag_t post_tag_q[ArgmaxLatency];  // Its tag
+    logic [DigitWidth-1:0] post_label_q[ArgmaxLatency];  // True digit
+    logic [31:0] post_score_sum_q[ArgmaxLatency];  // Checksum contribution
 
     // Post-processing valid bits (control, reset).
     always_ff @(posedge clk_i or negedge rst_ni) begin
         if (!rst_ni) begin
             post_valid_q <= '0;
         end else begin
-            post_valid_q <= {post_valid_q[ArgmaxLatency-2:0], p1_valid};
+            post_valid_q <= {post_valid_q[ArgmaxLatency-2:0], p1_valid_q};
         end
     end
 
     // Post-processing data (datapath).
     always_ff @(posedge clk_i) begin
-        post_tag_q[0]       <= p1_tag;
-        post_label_q[0]     <= p1_label;
+        post_tag_q[0]       <= p1_tag_q;
+        post_label_q[0]     <= p1_label_q;
         post_score_sum_q[0] <= score_sum;
         for (int stage = 1; stage < ArgmaxLatency; stage++) begin
             post_tag_q[stage]       <= post_tag_q[stage-1];
@@ -478,7 +482,10 @@ module mlp_core
 
     // ---- PD: write the results ----
     logic                  done_valid;  // PD holds a real result
+    // done_tag.first is not needed once the sum is final.
+    /* verilator lint_off UNUSEDSIGNAL */
     tag_t                  done_tag;  // Its tag
+    /* verilator lint_on UNUSEDSIGNAL */
     logic [DigitWidth-1:0] done_label;  // Its true digit
     logic [          31:0] done_score_sum;  // Its checksum contribution
     assign done_valid     = post_valid_q[ArgmaxLatency-1];
@@ -491,16 +498,16 @@ module mlp_core
     logic image_done;  // The last layer 2 block: the prediction is final
     assign layer1_done = done_valid && done_tag.last && !done_tag.layer;
     assign layer2_done = done_valid && done_tag.last && done_tag.layer;
-    assign image_done  = layer2_done && (done_tag.block == BlockWidth'(L2ColBlocks - 1));
+    assign image_done = layer2_done && (done_tag.block == BlockWidth'(L2ColBlocks - 1));
 
-    assign hidden_write      = layer1_done;
+    assign hidden_write = layer1_done;
     assign hidden_write_addr = HiddenAddrWidth'(done_tag.image) * HiddenAddrWidth'(L1ColBlocks) +
         HiddenAddrWidth'(done_tag.block);
     assign hidden_write_data = hidden_delay_q[HiddenDelay-1];
 
-    assign best_write       = layer2_done;
+    assign best_write = layer2_done;
     assign best_write_image = done_tag.image;
-    assign best_write_data  = {best_score, best_digit};
+    assign best_write_data = {best_score, best_digit};
 
     logic [ImageWidth-1:0] pred_image;  // Test image whose prediction is final
     assign pred_image = batch_start + ImageWidth'(done_tag.image);
@@ -544,7 +551,7 @@ module mlp_core
     assign checksum_o      = checksum_q;
 
     // The controller may finish a layer only when nothing is left in flight.
-    assign pipe_busy = act_read || (|tag_valid_q) || p1_valid || (|post_valid_q);
+    assign pipe_busy       = act_read || (|tag_valid_q) || p1_valid_q || (|post_valid_q);
 
     // ---- Assertions ----
     // A finished image always comes from inside the test set.

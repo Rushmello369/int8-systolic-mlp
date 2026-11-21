@@ -23,13 +23,16 @@ module pe_array #(
     input  logic                           weight_load_i,  // Shift weights down every column
     input  logic [Cols-1:0][DataWidth-1:0] weight_i,       // Top edge, one weight per column
     input  logic [Rows-1:0][DataWidth-1:0] act_i,          // Left edge, one input per row, skewed
-    output logic [Cols-1:0][ AccWidth-1:0] psum_o          // Bottom edge, one dot product per column
+    output logic [Cols-1:0][ AccWidth-1:0] psum_o          // Bottom edge, one sum per column
 );
     // Each wire group has one more position than PEs along its flow direction:
     // position 0 is fed from the edge, and PE i drives position i+1.
-    logic [Rows-1:0][Cols:0][DataWidth-1:0] act;  // Activations, flowing right
-    logic [Rows:0][Cols-1:0][DataWidth-1:0] weight;  // Weights, shifting down while loading
-    logic [Rows:0][Cols-1:0][ AccWidth-1:0] psum;  // Partial sums, flowing down
+    logic [Rows-1:0][  Cols:0][DataWidth-1:0] act;  // Activations, flowing right
+    // The last row of positions (weight[Rows]) is the bottom PEs' weight_o: unused.
+    /* verilator lint_off UNUSEDSIGNAL */
+    logic [  Rows:0][Cols-1:0][DataWidth-1:0] weight;  // Weights, shifting down while loading
+    /* verilator lint_on UNUSEDSIGNAL */
+    logic [  Rows:0][Cols-1:0][ AccWidth-1:0] psum;  // Partial sums, flowing down
 
     // Left edge: each row's first act position comes from the input port.
     for (genvar row = 0; row < Rows; row++) begin : gen_left_edge

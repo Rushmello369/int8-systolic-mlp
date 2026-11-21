@@ -72,16 +72,16 @@ module controller
         StWaitEmpty
     } state_e;
 
-    state_e                    state_q, state_d;  // Where in the tile sequence we are
-    logic [    CountWidth-1:0] count_q, count_d;  // Cycle within the current state
-    logic                      layer_q, layer_d;  // 0: layer 1, 1: layer 2
-    logic [    BlockWidth-1:0] block_q, block_d;  // Neuron block nb within the layer
-    logic [    BlockWidth-1:0] row_block_q, row_block_d;  // Input block kb within the layer
-    logic [    BatchWidth-1:0] batch_size_q, batch_size_d;  // Images per batch for this run
-    logic [    ImageWidth-1:0] batch_start_q, batch_start_d;  // First image of the batch
-    logic [    BatchWidth-1:0] batch_len_q, batch_len_d;  // Images in this batch
-    logic                      done_q, done_d;  // Registered done pulse
-    logic [              31:0] cycle_count_q, cycle_count_d;  // Cycles since start
+    state_e state_q, state_d;  // Where in the tile sequence we are
+    logic [CountWidth-1:0] count_q, count_d;  // Cycle within the current state
+    logic layer_q, layer_d;  // 0: layer 1, 1: layer 2
+    logic [BlockWidth-1:0] block_q, block_d;  // Neuron block nb within the layer
+    logic [BlockWidth-1:0] row_block_q, row_block_d;  // Input block kb within the layer
+    logic [BatchWidth-1:0] batch_size_q, batch_size_d;  // Images per batch for this run
+    logic [ImageWidth-1:0] batch_start_q, batch_start_d;  // First image of the batch
+    logic [BatchWidth-1:0] batch_len_q, batch_len_d;  // Images in this batch
+    logic done_q, done_d;  // Registered done pulse
+    logic [31:0] cycle_count_q, cycle_count_d;  // Cycles since start
 
     // Last input block and last neuron block of the current layer.
     logic [BlockWidth-1:0] last_row_block;  // kb of the last tile in a neuron block
@@ -261,15 +261,15 @@ module controller
     // Addresses and tags are datapath, qualified by the strobes.
     always_ff @(posedge clk_i) begin
         weight_addr_q <= tile * WeightAddrWidth'(Rows) + WeightAddrWidth'(count_q);
-        image_addr_q  <= (ImageAddrWidth'(batch_start_q) + ImageAddrWidth'(count_q)) *
+        image_addr_q <= (ImageAddrWidth'(batch_start_q) + ImageAddrWidth'(count_q)) *
             ImageAddrWidth'(L1RowBlocks) + ImageAddrWidth'(row_block_q);
         hidden_addr_q <= HiddenAddrWidth'(count_q) * HiddenAddrWidth'(L1ColBlocks) +
             HiddenAddrWidth'(row_block_q);
-        layer_tag_q   <= layer_q;
+        layer_tag_q <= layer_q;
         batch_index_q <= BatchIndexWidth'(count_q);
-        block_tag_q   <= block_q;
-        first_q       <= (row_block_q == '0);
-        last_q        <= (row_block_q == last_row_block);
+        block_tag_q <= block_q;
+        first_q <= (row_block_q == '0);
+        last_q <= (row_block_q == last_row_block);
     end
 
     assign busy_o        = (state_q != StIdle);

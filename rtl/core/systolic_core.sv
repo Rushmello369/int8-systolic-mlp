@@ -20,7 +20,7 @@ module systolic_core #(
 ) (
     input  logic                           clk_i,          // System clock
     input  logic                           weight_load_i,  // Shift weights down every column
-    input  logic [Cols-1:0][DataWidth-1:0] weight_i,       // One weight per column, bottom row first
+    input  logic [Cols-1:0][DataWidth-1:0] weight_i,       // Per-column weight, bottom row first
     input  logic [Rows-1:0][DataWidth-1:0] act_i,          // One input vector, aligned
     output logic [Cols-1:0][ AccWidth-1:0] psum_o          // Its dot products, aligned
 );

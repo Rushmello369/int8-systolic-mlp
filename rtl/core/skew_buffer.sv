@@ -38,7 +38,7 @@ module skew_buffer #(
             always_ff @(posedge clk_i) begin
                 delay_q[0] <= data_i[lane];
                 for (int stage = 1; stage < lane; stage++) begin
-                    delay_q[stage] <= delay_q[stage - 1];
+                    delay_q[stage] <= delay_q[stage-1];
                 end
             end
 

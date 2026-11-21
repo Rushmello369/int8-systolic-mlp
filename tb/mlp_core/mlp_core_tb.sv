@@ -104,14 +104,14 @@ module mlp_core_tb
     always @(negedge clk_i) begin
         int image;  // test image of the scores
         int block;  // neuron block of the scores
-        if (rst_ni && dut.p1_valid && dut.p1_tag.last && dut.p1_tag.layer) begin
-            image = int'(dut.batch_start) + int'(dut.p1_tag.image);
-            block = int'(dut.p1_tag.block);
+        if (rst_ni && dut.p1_valid_q && dut.p1_tag_q.last && dut.p1_tag_q.layer) begin
+            image = int'(dut.batch_start) + int'(dut.p1_tag_q.image);
+            block = int'(dut.p1_tag_q.block);
             checks++;
             score_blocks[image*L2ColBlocks+block]++;
-            if (dut.p1_acc !== expected_scores[image*L2ColBlocks+block]) begin
+            if (dut.p1_acc_q !== expected_scores[image*L2ColBlocks+block]) begin
                 fail($sformatf("scores image %0d block %0d: got %h, want %h", image, block,
-                               dut.p1_acc, expected_scores[image*L2ColBlocks+block]));
+                               dut.p1_acc_q, expected_scores[image*L2ColBlocks+block]));
             end
         end
     end

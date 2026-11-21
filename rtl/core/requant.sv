@@ -19,10 +19,10 @@ module requant #(
     parameter int unsigned Shift     = 16,  // Right shift; at least 1
     parameter int unsigned OutWidth  = 8    // Output width; the result is 0..2^(OutWidth-1)-1
 ) (
-    input  logic                       clk_i,   // System clock
-    input  logic signed [AccWidth-1:0] acc_i,   // Accumulator, bias already added
+    input  logic                        clk_i,   // System clock
+    input  logic signed [ AccWidth-1:0] acc_i,   // Accumulator, bias already added
     input  logic        [MultWidth-1:0] mult_i,  // This neuron's multiplier m
-    output logic        [OutWidth-1:0] value_o  // Requantised value, 2 cycles after acc_i
+    output logic        [ OutWidth-1:0] value_o  // Requantised value, 2 cycles after acc_i
 );
     // Rounding adds 2^(Shift-1), which needs Shift >= 1.
     if (Shift < 1) begin : gen_shift_check
@@ -42,7 +42,7 @@ module requant #(
     end
 
     // ---- Stage 2: round, shift, clamp ----
-    localparam logic signed [ProductWidth-1:0] Half = ProductWidth'(1) <<< (Shift - 1);  // 0.5 step
+    localparam logic signed [ProductWidth-1:0] Half = ProductWidth'(1) <<< (Shift - 1);  // 0.5 LSB
     localparam logic signed [ProductWidth-1:0] MaxValue = (2 ** (OutWidth - 1)) - 1;  // 127
 
     logic signed [ProductWidth-1:0] rounded;  // product scaled down and rounded to nearest

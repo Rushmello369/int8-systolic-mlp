@@ -13,11 +13,11 @@
 module uart_rx #(
     parameter int unsigned ClksPerBit = 1302  // Clock cycles per bit; at least 4
 ) (
-    input  logic       clk_i,   // System clock
-    input  logic       rst_ni,  // Asynchronous reset, active-low
-    input  logic       rx_i,    // Serial input, asynchronous, idle high
-    output logic       valid_o, // One-cycle pulse: data_o holds a received byte
-    output logic [7:0] data_o   // The received byte
+    input  logic       clk_i,    // System clock
+    input  logic       rst_ni,   // Asynchronous reset, active-low
+    input  logic       rx_i,     // Serial input, asynchronous, idle high
+    output logic       valid_o,  // One-cycle pulse: data_o holds a received byte
+    output logic [7:0] data_o    // The received byte
 );
     // The mid-bit sample point needs a few cycles per bit.
     if (ClksPerBit < 4) begin : gen_clks_check
@@ -51,11 +51,11 @@ module uart_rx #(
         StStop
     } state_e;
 
-    state_e                  state_q, state_d;  // Position in the frame
-    logic   [CountWidth-1:0] count_q, count_d;  // Cycles since the last sample point
-    logic   [           2:0] bit_q, bit_d;  // Data bit being received
-    logic   [           7:0] shift_q, shift_d;  // Data bits so far, LSB arrives first
-    logic                    valid_q, valid_d;  // Registered byte-ready pulse
+    state_e state_q, state_d;  // Position in the frame
+    logic [CountWidth-1:0] count_q, count_d;  // Cycles since the last sample point
+    logic [2:0] bit_q, bit_d;  // Data bit being received
+    logic [7:0] shift_q, shift_d;  // Data bits so far, LSB arrives first
+    logic valid_q, valid_d;  // Registered byte-ready pulse
 
     // Next state, counters and data.
     always_comb begin

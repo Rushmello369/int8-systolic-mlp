@@ -36,6 +36,7 @@ module fpga_top
     logic clk;  // 150 MHz system clock
 
     // Differential input buffer for the board clock.
+    // svstyle: waive EXT-VLTR-MODMISSING Xilinx unisim primitive, compiled from unisims_ver
     IBUFDS u_sys_clk_buf (
         .I (sys_clk_p_i),
         .IB(sys_clk_n_i),
@@ -43,6 +44,7 @@ module fpga_top
     );
 
     // 200 MHz in, 150 MHz out: VCO = 200 x 6 = 1200 MHz, output = 1200 / 8.
+    // svstyle: waive EXT-VLTR-MODMISSING Xilinx unisim primitive, compiled from unisims_ver
     MMCME2_BASE #(
         .CLKIN1_PERIOD   (5.000),
         .DIVCLK_DIVIDE   (1),
@@ -70,6 +72,7 @@ module fpga_top
     );
 
     // Global clock buffer: drives the system clock network.
+    // svstyle: waive EXT-VLTR-MODMISSING Xilinx unisim primitive, compiled from unisims_ver
     BUFG u_clk_buf (
         .I(mmcm_clk),
         .O(clk)

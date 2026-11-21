@@ -23,15 +23,15 @@ module argmax #(
     parameter int unsigned ScoreWidth = 24,  // Score width (signed)
     parameter int unsigned IndexWidth = 4    // Width of a score's index (digit)
 ) (
-    input  logic                         clk_i,         // System clock
-    input  logic [Lanes-1:0][ScoreWidth-1:0] scores_i,  // This block's scores, signed
-    input  logic [Lanes-1:0]             lane_valid_i,  // Lane holds a real score
-    input  logic [IndexWidth-1:0]        base_index_i,  // Index of lane 0
-    input  logic                         use_prev_i,    // Merge with the earlier best
-    input  logic signed [ScoreWidth-1:0] prev_score_i,  // Best score of the earlier blocks
-    input  logic [IndexWidth-1:0]        prev_index_i,  // Its index
+    input logic clk_i,  // System clock
+    input logic [Lanes-1:0][ScoreWidth-1:0] scores_i,  // This block's scores, signed
+    input logic [Lanes-1:0] lane_valid_i,  // Lane holds a real score
+    input logic [IndexWidth-1:0] base_index_i,  // Index of lane 0
+    input logic use_prev_i,  // Merge with the earlier best
+    input logic signed [ScoreWidth-1:0] prev_score_i,  // Best score of the earlier blocks
+    input logic [IndexWidth-1:0] prev_index_i,  // Its index
     output logic signed [ScoreWidth-1:0] best_score_o,  // Best score so far, log2(Lanes)+1 later
-    output logic [IndexWidth-1:0]        best_index_o   // Its index; lowest index on a tie
+    output logic [IndexWidth-1:0] best_index_o  // Its index; lowest index on a tie
 );
     // The pairwise tree needs a power of two.
     if (Lanes < 2 || (Lanes & (Lanes - 1)) != 0) begin : gen_lanes_check
@@ -110,7 +110,10 @@ module argmax #(
     candidate_t block_best;  // Best candidate of this block, out of the tree
     assign block_best = tree_q[Levels-1][0];
 
+    // best_q.valid is not an output: every block has at least one valid lane.
+    /* verilator lint_off UNUSEDSIGNAL */
     candidate_t best_q, best_d;  // Best candidate over all blocks so far
+    /* verilator lint_on UNUSEDSIGNAL */
 
     // The earlier best has the lower indices, so it is the left side of the pair.
     always_comb begin
