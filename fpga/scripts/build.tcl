@@ -1,14 +1,16 @@
-# int8_mlp: Vivado non-project build of fpga_top, up to a routed design.
+# int8_mlp: Vivado non-project build of fpga_top, up to the bitstream.
 #
 # Run from the project root (or use scripts\build.ps1):
 #     vivado -mode batch -source fpga/scripts/build.tcl
 #
-# Steps: synthesis, optimisation, placement, physical optimisation, routing.
-# It stops before write_bitstream on purpose: the bitstream is the next step,
-# once the reports below have been reviewed.
+# Steps: synthesis, optimisation, placement, physical optimisation, routing,
+# then the bitstream. The bitstream is written only if setup and hold timing
+# are both met: a design that misses timing may work on the bench and then
+# fail when the chip warms up, so it is better not to have the file at all.
 # Writes:
 #     fpga/reports/*.rpt     timing, utilisation, clocks, DRC, methodology (kept in git)
 #     build/fpga/*.dcp       design checkpoints (ignored by git)
+#     build/fpga/fpga_top.bit  the bitstream (ignored by git)
 # Needs the .mem files from model/gen_vectors.py: they become the initial
 # contents of the weight, image, label, bias and multiplier memories.
 
@@ -53,7 +55,15 @@ report_clocks -file [file join $report_dir clocks.rpt]
 report_drc -file [file join $report_dir drc.rpt]
 report_methodology -file [file join $report_dir methodology.rpt]
 
-# One line for the log: worst negative slack of the setup and hold checks
+# Worst slack of the setup (max) and hold (min) checks
 set wns [get_property SLACK [get_timing_paths -delay_type max]]
 set whs [get_property SLACK [get_timing_paths -delay_type min]]
-puts "BUILD DONE: WNS $wns ns, WHS $whs ns (bitstream not written)"
+
+# ---- Bitstream, only on a design that meets timing ----
+if {$wns < 0 || $whs < 0} {
+    puts "BUILD FAILED: timing not met (WNS $wns ns, WHS $whs ns), no bitstream written"
+    exit 1
+}
+set bitstream [file join $checkpoint_dir $top.bit]
+write_bitstream -force $bitstream
+puts "BUILD DONE: WNS $wns ns, WHS $whs ns, bitstream $bitstream"

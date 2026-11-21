@@ -38,6 +38,9 @@ try {
     if ($LASTEXITCODE -ne 0) { throw "Python tests failed" }
     & $python (Join-Path $root "model\gen_vectors.py")
     if ($LASTEXITCODE -ne 0) { throw "gen_vectors.py failed" }
+    # The host tests read the .mem files, so they run after gen_vectors.py.
+    & $python -m pytest host -q
+    if ($LASTEXITCODE -ne 0) { throw "Host script tests failed" }
 
     foreach ($run in $runs) {
         $name = $run[0]

@@ -7,6 +7,9 @@
 ##   Keys           sec. 3.13 (RESET = F15, low when pressed)
 ##   LEDs           sec. 3.14 (LED1..4 = L13, M13, K14, K13, lit when low)
 ## Banks other than 34/35 run at 3.3 V on this board, hence LVCMOS33.
+## Checked on this board by the earlier fpga-feed-handler bring-up: R4/T4, F15,
+## L14/L15 work as above, and M13/K14/K13 drive LED2/LED3/LED4, lit when low.
+## L13 (LED1) is from the manual only; it is the one pin not yet seen working.
 
 ## ---- Clock: 200 MHz differential ----
 set_property PACKAGE_PIN R4 [get_ports sys_clk_p_i]
@@ -25,6 +28,8 @@ set_property PACKAGE_PIN L15 [get_ports uart_tx_o]
 set_property IOSTANDARD LVCMOS33 [get_ports {uart_rx_i uart_tx_o}]
 
 ## ---- User LEDs ----
+## led_no[0] busy -> LED1, [1] results ready -> LED2, [2] heartbeat -> LED3,
+## [3] MMCM locked -> LED4.
 set_property PACKAGE_PIN L13 [get_ports {led_no[0]}]
 set_property PACKAGE_PIN M13 [get_ports {led_no[1]}]
 set_property PACKAGE_PIN K14 [get_ports {led_no[2]}]

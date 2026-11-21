@@ -1,10 +1,11 @@
-# Build fpga_top in Vivado up to a routed design (no bitstream).
+# Build fpga_top in Vivado: routed design, reports and bitstream.
 #
 # Usage, from the project root:
 #     powershell -ExecutionPolicy Bypass -File scripts\build.ps1
 #
 # Regenerates the .mem files first, so the memories hold the current model.
-# Reports go to fpga\reports\, the Vivado log and checkpoints to build\fpga\.
+# Reports go to fpga\reports\; the Vivado log, checkpoints and fpga_top.bit
+# go to build\fpga\.
 
 param(
     [string]$VivadoBin = "C:\AMDDesignTools\2025.2\Vivado\bin"

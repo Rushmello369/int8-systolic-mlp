@@ -9,6 +9,8 @@ Every number here points to the report or log it came from. No estimates.
 | INT8 loss vs float | −0.56 points (target ≤ 1) | `python model/golden.py` |
 | RTL vs integer model, all 360 test images | 0 mismatches (every hidden value, score and prediction) | `scripts\sim.ps1 mlp_core` |
 | Clock, routed design | 150 MHz met: WNS +0.580 ns, WHS +0.013 ns | [timing_summary.rpt](../fpga/reports/timing_summary.rpt) |
+| Board vs integer model, all 360 test images | 0 mismatches at five batch sizes; cycle counts equal to simulation | [board_run.txt](../fpga/reports/board_run.txt) |
+| Whole test set on the board, batch 360 | 15,263 cycles = 101.8 µs at 150 MHz | [board_run.txt](../fpga/reports/board_run.txt) |
 | DSP48E1 slices | 72 of 740 (64 PEs + 8 requantisers) | [utilization.rpt](../fpga/reports/utilization.rpt) |
 
 ## Float baseline details
@@ -90,7 +92,7 @@ Each bug was planted by hand, the testbench run, and the file restored.
 
 ## FPGA implementation
 
-Vivado 2025.2, part xc7a200tfbg484-2, routed design, no bitstream yet.
+Vivado 2025.2, part xc7a200tfbg484-2, routed design and bitstream.
 Build: `powershell -ExecutionPolicy Bypass -File scripts\build.ps1`.
 
 | Quantity | Value | Source |
@@ -106,3 +108,20 @@ Build: `powershell -ExecutionPolicy Bypass -File scripts\build.ps1`.
 The first build missed 150 MHz (WNS −1.831 ns, 72 failing endpoints). Three fixes closed it:
 the argmax tree got one register per compare level, the PE multiply-add moved into DSP48
 slices (`use_dsp`), and a register was added between the input memories and the array.
+
+## On the board
+
+ALINX AX7A200B, bitstream from `scripts\build.ps1`, programmed over JTAG from the
+Vivado Hardware Manager. Run: `.venv\Scripts\python.exe host\run_board.py --port COM4 --batch <n>`.
+Full output: [board_run.txt](../fpga/reports/board_run.txt).
+
+| Batch size | Predictions vs model | Correct | Checksum | Cycles (board = simulation) | Time at 150 MHz |
+| --- | --- | --- | --- | --- | --- |
+| 360 | 360 / 360 match | 346 / 360 | 0x001b5b5f | 15,263 | 101.8 µs |
+| 64 | 360 / 360 match | 346 / 360 | 0x001b5b5f | 19,573 | 130.5 µs |
+| 8 | 360 / 360 match | 346 / 360 | 0x001b5b5f | 53,191 | 354.6 µs |
+| 7 | 360 / 360 match | 346 / 360 | 0x001b5b5f | 59,225 | 394.8 µs |
+| 1 | 360 / 360 match | 346 / 360 | 0x001b5b5f | 324,721 | 2,164.8 µs |
+
+The board's cycle counts equal the simulated ones exactly: the design has no
+data-dependent timing, so any difference would point to a fault, not noise.

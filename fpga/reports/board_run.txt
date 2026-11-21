@@ -1,0 +1,49 @@
+# On-board run of build\fpga\fpga_top.bit on the ALINX AX7A200B, COM4 at 115200 baud
+# Command: .venv\Scripts\python.exe host\run_board.py --port COM4 --batch <n>
+# Date: 2026-11-21 21:43
+
+=== batch 360
+Predictions: all 360 match the model
+Correct count: 346 / 360 (matches the model)
+Checksum: 0x001b5b5f (matches the model)
+Batch size 360: 15263 cycles = 101.8 us at 150 MHz
+Cycle count matches simulation (15263)
+BOARD PASS
+exit 0
+
+=== batch 64
+Predictions: all 360 match the model
+Correct count: 346 / 360 (matches the model)
+Checksum: 0x001b5b5f (matches the model)
+Batch size 64: 19573 cycles = 130.5 us at 150 MHz
+Cycle count matches simulation (19573)
+BOARD PASS
+exit 0
+
+=== batch 8
+Predictions: all 360 match the model
+Correct count: 346 / 360 (matches the model)
+Checksum: 0x001b5b5f (matches the model)
+Batch size 8: 53191 cycles = 354.6 us at 150 MHz
+Cycle count matches simulation (53191)
+BOARD PASS
+exit 0
+
+=== batch 7
+Predictions: all 360 match the model
+Correct count: 346 / 360 (matches the model)
+Checksum: 0x001b5b5f (matches the model)
+Batch size 7: 59225 cycles = 394.8 us at 150 MHz
+Cycle count matches simulation (59225)
+BOARD PASS
+exit 0
+
+=== batch 1
+Predictions: all 360 match the model
+Correct count: 346 / 360 (matches the model)
+Checksum: 0x001b5b5f (matches the model)
+Batch size 1: 324721 cycles = 2164.8 us at 150 MHz
+Cycle count matches simulation (324721)
+BOARD PASS
+exit 0
+
